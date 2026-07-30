@@ -184,7 +184,7 @@
     'sequence': 1,
     'version': '19.0.0.18',
     'application': False,
-    'depends': ['stock_delivery', 'sale', 'stock', 'delivery', 'purchase'],
+    'depends': ['sale', 'stock', 'delivery', 'purchase'],
     'data': [
         'security/ir.model.access.csv',
         'data/data.xml',
