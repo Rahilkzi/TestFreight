@@ -11,7 +11,7 @@
             <field name="purchase_ok" eval="False"/>
             <field name="list_price">0.0</field>
             <field name="invoice_policy">order</field>
-            <field name="taxes_id" eval='[(5,)]'/>
+            <field name="taxes_id" eval="[(5,)]"/>
         </record>
 
         <record id="cargoson_packaging_ctn" model="stock.package.type">
@@ -84,7 +84,6 @@
             <field name="is_crate">False</field>
             <field name="is_active">True</field>
         </record>
-
 
         <record id="cargoson_packaging_document" model="stock.package.type">
             <field name="name">DOC: Dokument</field>
@@ -177,13 +176,13 @@
 
         <record id="delivery_carrier_cargoson_sale" model="delivery.carrier">
             <field name="name">Cargoson Draft</field>
-            <field name="product_id" ref="delivery_cargoson.product_product_delivery_cargoson"/>
+            <field name="product_id" ref="product_product_delivery_cargoson"/>
             <field name="delivery_type">cargoson</field>
             <field name="integration_level">rate</field>
-            <field name="cargoson_email"></field>
-            <field name="cargoson_password"></field>
+            <field name="cargoson_email"/>
+            <field name="cargoson_password"/>
             <field name="use_for">sale</field>
-            <field name="cargoson_default_package_type_id" ref="delivery_cargoson.cargoson_packaging_eur"/>
+            <field name="cargoson_default_package_type_id" ref="cargoson_packaging_eur"/>
             <field name="sequence">20</field>
             <field name="fixed_price">0.0</field>
             <field name="prod_environment">False</field>
