@@ -187,7 +187,6 @@
     'depends': ['stock_delivery', 'sale', 'stock', 'delivery', 'purchase'],
     'data': [
         'security/ir.model.access.csv',
-        'data/product_data.xml',
         'data/data.xml',
         'views/res_config_settings_views.xml',
         'views/delivery_carrier_views.xml',
