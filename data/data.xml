@@ -162,13 +162,13 @@
 
         <record id="delivery_carrier_cargoson_picking" model="delivery.carrier">
             <field name="name">Cargoson Booking</field>
-            <field name="product_id" ref="delivery_cargoson.product_product_delivery_cargoson"/>
+            <field name="product_id" ref="product_product_delivery_cargoson"/>
             <field name="delivery_type">cargoson</field>
             <field name="integration_level">rate_and_ship</field>
-            <field name="cargoson_email"></field>
-            <field name="cargoson_password"></field>
+            <field name="cargoson_email"/>
+            <field name="cargoson_password"/>
             <field name="use_for">picking</field>
-            <field name="cargoson_default_package_type_id" ref="delivery_cargoson.cargoson_packaging_eur"/>
+            <field name="cargoson_default_package_type_id" ref="cargoson_packaging_eur"/>
             <field name="sequence">10</field>
             <field name="fixed_price">0.0</field>
             <field name="prod_environment">False</field>
