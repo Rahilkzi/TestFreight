@@ -2,6 +2,7 @@
 #SingleInstance Force
 
 running := false
+printing := false
 
 
 ; =========================================================
@@ -33,9 +34,11 @@ F6:: {
 ; =========================================================
 
 F7:: {
-    global running
+    global running, printing
 
     running := false
+    printing := false
+
     SetTimer SAPAutomation, 0
 
     ToolTip "STOPPED"
@@ -44,19 +47,19 @@ F7:: {
 
 
 ; =========================================================
-; MAIN SAP AUTOMATION
+; MAIN AUTOMATION
 ; =========================================================
 
 SAPAutomation() {
 
-    global running
+    global running, printing
 
     if !running
         return
 
 
     ; =====================================================
-    ; 1. CHECK FOR WINDOWS PDF ERROR
+    ; 1. CHECK FOR PDF ERROR WINDOW
     ; =====================================================
 
     dialogs := WinGetList("ahk_class #32770")
@@ -64,6 +67,7 @@ SAPAutomation() {
     for hwnd in dialogs {
 
         try {
+            title := WinGetTitle("ahk_id " hwnd)
             text := WinGetText("ahk_id " hwnd)
 
             if InStr(text, "This file does not have an app associated with it") {
@@ -73,10 +77,12 @@ SAPAutomation() {
 
                 Sleep 100
 
-                ; Press ENTER = OK
+                ; ENTER = OK
                 Send "{Enter}"
 
                 Sleep 500
+
+                printing := false
 
                 return
             }
@@ -88,56 +94,45 @@ SAPAutomation() {
     ; 2. FIND SAP PRINT WINDOW
     ; =====================================================
 
-    printWindows := WinGetList("Print:")
+    printWindows := WinGetList("ahk_class #32770")
 
     for hwnd in printWindows {
 
         try {
 
-            ; Get SAP Print window position and size
-            WinGetPos &wx, &wy, &ww, &wh, "ahk_id " hwnd
+            title := WinGetTitle("ahk_id " hwnd)
 
 
-            ; ------------------------------------------------
-            ; PRINT BUTTON
-            ;
-            ; Based on your SAP Print window screenshot.
-            ; ------------------------------------------------
+            ; Only work with SAP's "Print:" window
+            if InStr(title, "Print:") {
 
-            clickX := wx + ww - 75
-            clickY := wy + wh - 25
+                ; Don't repeatedly click the same Print window
+                if printing
+                    return
 
-
-            ; Save current mouse position
-            MouseGetPos &oldX, &oldY
+                printing := true
 
 
-            ; Activate SAP Print window
-            WinActivate "ahk_id " hwnd
+                ; =================================================
+                ; CLICK SAP PRINT BUTTON
+                ;
+                ; Window Spy identified it as Button3
+                ; =================================================
 
-            Sleep 100
+                ControlClick(
+                    "Button3",
+                    "ahk_id " hwnd,
+                    ,
+                    "Left",
+                    1,
+                    "NA"
+                )
 
+                ; Give SAP time to process the print
+                Sleep 1000
 
-            ; Move to Print button
-            MouseMove clickX, clickY, 0
-
-
-            ; REAL LEFT CLICK
-            Click "Left"
-
-
-            ; Small delay
-            Sleep 100
-
-
-            ; Return mouse to original position
-            MouseMove oldX, oldY, 0
-
-
-            ; Give SAP time to process
-            Sleep 800
-
-            return
+                return
+            }
         }
     }
 }
