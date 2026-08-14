@@ -3,66 +3,49 @@
 running := false
 clickX := 0
 clickY := 0
-
-; Change this if you want faster/slower clicking
 clickDelay := 500
 
 
-; =====================================
-; F8 = SAVE MOUSE POSITION
-; =====================================
-
+; F8 = Save the button position
 F8:: {
     global clickX, clickY
 
     MouseGetPos &clickX, &clickY
 
-    ToolTip "Position saved: " clickX ", " clickY
+    ToolTip "Button position saved:`n" clickX ", " clickY
     SetTimer RemoveToolTip, -1500
 }
 
 
-; =====================================
-; F6 = START / STOP
-; =====================================
-
+; F6 = Start / Stop
 F6:: {
-    global running, clickX, clickY, clickDelay
-
-    if (clickX = 0 && clickY = 0) {
-        MsgBox "First move the mouse over the button and press F8."
-        return
-    }
+    global running
 
     running := !running
 
     if running {
-        SetTimer DoClick, clickDelay
-        SetTimer CheckError, 100
+        SetTimer AutoClick, 500
+        SetTimer CheckError, 200
 
-        ToolTip "AUTO CLICK ON"
+        ToolTip "AUTO CLICK: ON"
     }
     else {
-        SetTimer DoClick, 0
+        SetTimer AutoClick, 0
         SetTimer CheckError, 0
 
-        ToolTip "AUTO CLICK OFF"
+        ToolTip "AUTO CLICK: OFF"
     }
 
     SetTimer RemoveToolTip, -1000
 }
 
 
-; =====================================
-; F7 = EMERGENCY STOP
-; =====================================
-
+; F7 = Emergency stop
 F7:: {
     global running
 
     running := false
-
-    SetTimer DoClick, 0
+    SetTimer AutoClick, 0
     SetTimer CheckError, 0
 
     ToolTip "STOPPED"
@@ -70,49 +53,40 @@ F7:: {
 }
 
 
-; =====================================
-; PERFORM CLICK
-; =====================================
-
-DoClick() {
+; Automatic click
+AutoClick() {
     global clickX, clickY
 
+    ; Remember where your cursor currently is
+    MouseGetPos &oldX, &oldY
+
+    ; Click the target
     Click clickX, clickY
+
+    ; Put cursor back where it was
+    MouseMove oldX, oldY, 0
 }
 
 
-; =====================================
-; CHECK FOR WINDOWS ERROR DIALOG
-; =====================================
-
+; Detect the Windows error
 CheckError() {
 
-    ; Standard Windows dialog
     dialogs := WinGetList("ahk_class #32770")
 
     for hwnd in dialogs {
-
         try {
             text := WinGetText(hwnd)
 
             if InStr(text, "This file does not have an app associated with it") {
-
                 WinActivate hwnd
                 Sleep 100
-
-                ; Press OK
                 Send "{Enter}"
-
                 return
             }
         }
     }
 }
 
-
-; =====================================
-; REMOVE TOOLTIP
-; =====================================
 
 RemoveToolTip() {
     ToolTip
