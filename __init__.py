@@ -1,150 +1,137 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
-; ============================================================
-; SETTINGS
-; ============================================================
-
-; Your application's executable
-appExe := "YourApplication.exe"
-
-; The control you want to repeatedly click.
-; Example: "Button1"
-targetControl := "Button1"
-
-; Time between clicks in milliseconds
-clickDelay := 500
-
-; ============================================================
-; STATE
-; ============================================================
-
 running := false
 
+; How often to check SAP
+checkDelay := 300
 
-; ============================================================
+
+; =========================================================
 ; F6 = START / STOP
-; ============================================================
+; =========================================================
 
 F6:: {
-    global running, clickDelay
+    global running
 
     running := !running
 
     if running {
-        SetTimer AutoClick, clickDelay
-        SetTimer CheckError, 200
+        SetTimer SAPAutomation, 300
 
-        ToolTip "AUTO CLICK: ON"
-        SetTimer RemoveToolTip, -1000
+        ToolTip "SAP AUTO PRINT: ON"
+        SetTimer RemoveToolTip, -1200
     }
     else {
-        SetTimer AutoClick, 0
-        SetTimer CheckError, 0
+        SetTimer SAPAutomation, 0
 
-        ToolTip "AUTO CLICK: OFF"
-        SetTimer RemoveToolTip, -1000
+        ToolTip "SAP AUTO PRINT: OFF"
+        SetTimer RemoveToolTip, -1200
     }
 }
 
 
-; ============================================================
+; =========================================================
 ; F7 = EMERGENCY STOP
-; ============================================================
+; =========================================================
 
 F7:: {
     global running
 
     running := false
-
-    SetTimer AutoClick, 0
-    SetTimer CheckError, 0
+    SetTimer SAPAutomation, 0
 
     ToolTip "STOPPED"
-    SetTimer RemoveToolTip, -1000
+    SetTimer RemoveToolTip, -1200
 }
 
 
-; ============================================================
-; AUTOMATIC CLICK
-; ============================================================
+; =========================================================
+; MAIN AUTOMATION
+; =========================================================
 
-AutoClick() {
-    global appExe, targetControl
+SAPAutomation() {
 
-    ; Find your application
-    hwnd := WinExist("ahk_exe " appExe)
+    global running
 
-    if !hwnd
+    if !running
         return
 
-    ; Send click directly to the Windows control.
-    ; The physical mouse does NOT move.
-    try {
-        ControlClick targetControl, "ahk_id " hwnd
-    }
-}
 
+    ; -----------------------------------------------------
+    ; 1. CHECK FOR WINDOWS PDF ERROR
+    ; -----------------------------------------------------
 
-; ============================================================
-; CHECK FOR YOUR WINDOWS ERROR
-; ============================================================
-
-CheckError() {
-
-    ; Windows standard dialog
     dialogs := WinGetList("ahk_class #32770")
 
     for hwnd in dialogs {
 
         try {
-            text := WinGetText(hwnd)
+            text := WinGetText("ahk_id " hwnd)
 
-            ; Detect the error from your screenshot
             if InStr(text, "This file does not have an app associated with it") {
 
-                ; Activate error window
+                ; Activate the error dialog
                 WinActivate "ahk_id " hwnd
 
                 Sleep 100
 
-                ; Press OK
+                ; Click/press OK
                 Send "{Enter}"
+
+                Sleep 300
 
                 return
             }
         }
     }
+
+
+    ; -----------------------------------------------------
+    ; 2. CHECK FOR SAP PRINT WINDOW
+    ; -----------------------------------------------------
+
+    printWindows := WinGetList("Print:")
+
+    for hwnd in printWindows {
+
+        try {
+
+            ; Get window position
+            WinGetPos &wx, &wy, &ww, &wh, "ahk_id " hwnd
+
+            ; Print button is approximately at the
+            ; bottom-right of the SAP Print window.
+            ;
+            ; We use ControlClick with coordinates
+            ; relative to the window.
+            ;
+            ; This does NOT intentionally move your mouse.
+
+            printX := ww - 75
+            printY := wh - 35
+
+            ControlClick(
+                "x" printX " y" printY,
+                "ahk_id " hwnd,
+                ,
+                "Left",
+                1,
+                "NA"
+            )
+
+            Sleep 500
+
+            return
+        }
+    }
 }
 
 
-; ============================================================
+; =========================================================
 ; REMOVE TOOLTIP
-; ============================================================
+; =========================================================
 
 RemoveToolTip() {
     ToolTip
-}
-
-
-; ============================================================
-; F8 = SHOW CURRENT APPLICATION INFORMATION
-; ============================================================
-
-F8:: {
-
-    MouseGetPos , , &mouseHwnd
-
-    try {
-        title := WinGetTitle("ahk_id " mouseHwnd)
-        exe := WinGetProcessName("ahk_id " mouseHwnd)
-        class := WinGetClass("ahk_id " mouseHwnd)
-
-        MsgBox(
-            "Window information:`n`n"
-            . "Title: " title "`n"
-            . "EXE: " exe "`n"
-            . "Class: " class
-        )
-    }
 }
