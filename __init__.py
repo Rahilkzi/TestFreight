@@ -2,7 +2,7 @@
 #SingleInstance Force
 
 running := false
-printing := false
+printClicked := false
 
 
 ; =========================================================
@@ -15,7 +15,7 @@ F6:: {
     running := !running
 
     if running {
-        SetTimer SAPAutomation, 300
+        SetTimer SAPAutomation, 200
 
         ToolTip "SAP AUTO PRINT: ON"
         SetTimer RemoveToolTip, -1200
@@ -34,10 +34,10 @@ F6:: {
 ; =========================================================
 
 F7:: {
-    global running, printing
+    global running, printClicked
 
     running := false
-    printing := false
+    printClicked := false
 
     SetTimer SAPAutomation, 0
 
@@ -52,27 +52,30 @@ F7:: {
 
 SAPAutomation() {
 
-    global running, printing
+    global running, printClicked
 
     if !running
         return
 
 
     ; =====================================================
-    ; 1. CHECK FOR PDF ERROR WINDOW
+    ; STEP 1 — LOOK FOR ERROR WINDOW
     ; =====================================================
 
     dialogs := WinGetList("ahk_class #32770")
 
+    errorFound := false
+
     for hwnd in dialogs {
 
         try {
-            title := WinGetTitle("ahk_id " hwnd)
             text := WinGetText("ahk_id " hwnd)
 
             if InStr(text, "This file does not have an app associated with it") {
 
-                ; Activate the error dialog
+                errorFound := true
+
+                ; Bring error window forward
                 WinActivate "ahk_id " hwnd
 
                 Sleep 100
@@ -82,7 +85,8 @@ SAPAutomation() {
 
                 Sleep 500
 
-                printing := false
+                ; Ready for next print
+                printClicked := false
 
                 return
             }
@@ -91,49 +95,67 @@ SAPAutomation() {
 
 
     ; =====================================================
-    ; 2. FIND SAP PRINT WINDOW
+    ; STEP 2 — IF NO ERROR, LOOK FOR SAP PRINT WINDOW
+    ; =====================================================
+
+    if !errorFound {
+
+        printWindows := WinGetList("ahk_class #32770")
+
+        for hwnd in printWindows {
+
+            try {
+                title := WinGetTitle("ahk_id " hwnd)
+
+                ; SAP Print window
+                if InStr(title, "Print:") {
+
+                    ; Prevent repeated clicking
+                    if printClicked
+                        return
+
+                    printClicked := true
+
+                    ; Button3 = PRINT
+                    ControlClick(
+                        "Button3",
+                        "ahk_id " hwnd,
+                        ,
+                        "Left",
+                        1,
+                        "NA"
+                    )
+
+                    Sleep 1000
+
+                    return
+                }
+            }
+        }
+    }
+
+
+    ; =====================================================
+    ; STEP 3 — NO PRINT WINDOW = READY FOR NEXT ONE
     ; =====================================================
 
     printWindows := WinGetList("ahk_class #32770")
 
+    hasPrintWindow := false
+
     for hwnd in printWindows {
-
         try {
-
             title := WinGetTitle("ahk_id " hwnd)
 
-
-            ; Only work with SAP's "Print:" window
             if InStr(title, "Print:") {
-
-                ; Don't repeatedly click the same Print window
-                if printing
-                    return
-
-                printing := true
-
-
-                ; =================================================
-                ; CLICK SAP PRINT BUTTON
-                ;
-                ; Window Spy identified it as Button3
-                ; =================================================
-
-                ControlClick(
-                    "Button3",
-                    "ahk_id " hwnd,
-                    ,
-                    "Left",
-                    1,
-                    "NA"
-                )
-
-                ; Give SAP time to process the print
-                Sleep 1000
-
-                return
+                hasPrintWindow := true
+                break
             }
         }
+    }
+
+    if !hasPrintWindow {
+        printClicked := false
     }
 }
 
