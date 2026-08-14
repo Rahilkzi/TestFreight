@@ -2,7 +2,6 @@
 #SingleInstance Force
 
 running := false
-printClicked := false
 
 
 ; =========================================================
@@ -16,77 +15,65 @@ F6:: {
 
     if running {
         SetTimer SAPAutomation, 200
-
-        ToolTip "SAP AUTO PRINT: ON"
-        SetTimer RemoveToolTip, -1200
+        ToolTip "AUTO PRINT: ON"
     }
     else {
         SetTimer SAPAutomation, 0
-
-        ToolTip "SAP AUTO PRINT: OFF"
-        SetTimer RemoveToolTip, -1200
+        ToolTip "AUTO PRINT: OFF"
     }
+
+    SetTimer RemoveToolTip, -1000
 }
 
 
 ; =========================================================
-; F7 = EMERGENCY STOP
+; F7 = STOP
 ; =========================================================
 
 F7:: {
-    global running, printClicked
+    global running
 
     running := false
-    printClicked := false
-
     SetTimer SAPAutomation, 0
 
     ToolTip "STOPPED"
-    SetTimer RemoveToolTip, -1200
+    SetTimer RemoveToolTip, -1000
 }
 
 
 ; =========================================================
-; MAIN AUTOMATION
+; MAIN LOOP
 ; =========================================================
 
 SAPAutomation() {
 
-    global running, printClicked
+    global running
 
     if !running
         return
 
 
-    ; =====================================================
-    ; STEP 1 — LOOK FOR ERROR WINDOW
-    ; =====================================================
+    ; ---------------------------------------------------------
+    ; FIRST: Is the ERROR window showing?
+    ; ---------------------------------------------------------
 
-    dialogs := WinGetList("ahk_class #32770")
+    windows := WinGetList("ahk_class #32770")
 
-    errorFound := false
-
-    for hwnd in dialogs {
+    for hwnd in windows {
 
         try {
             text := WinGetText("ahk_id " hwnd)
 
             if InStr(text, "This file does not have an app associated with it") {
 
-                errorFound := true
-
-                ; Bring error window forward
                 WinActivate "ahk_id " hwnd
 
                 Sleep 100
 
-                ; ENTER = OK
+                ; ONLY NOW press Enter
                 Send "{Enter}"
 
                 Sleep 500
-
-                ; Ready for next print
-                printClicked := false
 
                 return
             }
@@ -94,68 +81,35 @@ SAPAutomation() {
     }
 
 
-    ; =====================================================
-    ; STEP 2 — IF NO ERROR, LOOK FOR SAP PRINT WINDOW
-    ; =====================================================
+    ; ---------------------------------------------------------
+    ; SECOND: Is SAP PRINT window showing?
+    ; ---------------------------------------------------------
 
-    if !errorFound {
+    windows := WinGetList("ahk_class #32770")
 
-        printWindows := WinGetList("ahk_class #32770")
+    for hwnd in windows {
 
-        for hwnd in printWindows {
-
-            try {
-                title := WinGetTitle("ahk_id " hwnd)
-
-                ; SAP Print window
-                if InStr(title, "Print:") {
-
-                    ; Prevent repeated clicking
-                    if printClicked
-                        return
-
-                    printClicked := true
-
-                    ; Button3 = PRINT
-                    ControlClick(
-                        "Button3",
-                        "ahk_id " hwnd,
-                        ,
-                        "Left",
-                        1,
-                        "NA"
-                    )
-
-                    Sleep 1000
-
-                    return
-                }
-            }
-        }
-    }
-
-
-    ; =====================================================
-    ; STEP 3 — NO PRINT WINDOW = READY FOR NEXT ONE
-    ; =====================================================
-
-    printWindows := WinGetList("ahk_class #32770")
-
-    hasPrintWindow := false
-
-    for hwnd in printWindows {
         try {
             title := WinGetTitle("ahk_id " hwnd)
 
             if InStr(title, "Print:") {
-                hasPrintWindow := true
-                break
+
+                ; Button3 = Print
+                ControlClick(
+                    "Button3",
+                    "ahk_id " hwnd,
+                    ,
+                    "Left",
+                    1,
+                    "NA"
+                )
+
+                ; Wait before checking again
+                Sleep 1000
+
+                return
             }
         }
-    }
-
-    if !hasPrintWindow {
-        printClicked := false
     }
 }
 
