@@ -3,9 +3,6 @@
 
 running := false
 
-; How often to check SAP
-checkDelay := 300
-
 
 ; =========================================================
 ; F6 = START / STOP
@@ -47,7 +44,7 @@ F7:: {
 
 
 ; =========================================================
-; MAIN AUTOMATION
+; MAIN SAP AUTOMATION
 ; =========================================================
 
 SAPAutomation() {
@@ -58,9 +55,9 @@ SAPAutomation() {
         return
 
 
-    ; -----------------------------------------------------
+    ; =====================================================
     ; 1. CHECK FOR WINDOWS PDF ERROR
-    ; -----------------------------------------------------
+    ; =====================================================
 
     dialogs := WinGetList("ahk_class #32770")
 
@@ -76,10 +73,10 @@ SAPAutomation() {
 
                 Sleep 100
 
-                ; Click/press OK
+                ; Press ENTER = OK
                 Send "{Enter}"
 
-                Sleep 300
+                Sleep 500
 
                 return
             }
@@ -87,9 +84,9 @@ SAPAutomation() {
     }
 
 
-    ; -----------------------------------------------------
-    ; 2. CHECK FOR SAP PRINT WINDOW
-    ; -----------------------------------------------------
+    ; =====================================================
+    ; 2. FIND SAP PRINT WINDOW
+    ; =====================================================
 
     printWindows := WinGetList("Print:")
 
@@ -97,30 +94,48 @@ SAPAutomation() {
 
         try {
 
-            ; Get window position
+            ; Get SAP Print window position and size
             WinGetPos &wx, &wy, &ww, &wh, "ahk_id " hwnd
 
-            ; Print button is approximately at the
-            ; bottom-right of the SAP Print window.
+
+            ; ------------------------------------------------
+            ; PRINT BUTTON
             ;
-            ; We use ControlClick with coordinates
-            ; relative to the window.
-            ;
-            ; This does NOT intentionally move your mouse.
+            ; Based on your SAP Print window screenshot.
+            ; ------------------------------------------------
 
-            printX := ww - 75
-            printY := wh - 35
+            clickX := wx + ww - 75
+            clickY := wy + wh - 25
 
-            ControlClick(
-                "x" printX " y" printY,
-                "ahk_id " hwnd,
-                ,
-                "Left",
-                1,
-                "NA"
-            )
 
-            Sleep 500
+            ; Save current mouse position
+            MouseGetPos &oldX, &oldY
+
+
+            ; Activate SAP Print window
+            WinActivate "ahk_id " hwnd
+
+            Sleep 100
+
+
+            ; Move to Print button
+            MouseMove clickX, clickY, 0
+
+
+            ; REAL LEFT CLICK
+            Click "Left"
+
+
+            ; Small delay
+            Sleep 100
+
+
+            ; Return mouse to original position
+            MouseMove oldX, oldY, 0
+
+
+            ; Give SAP time to process
+            Sleep 800
 
             return
         }
