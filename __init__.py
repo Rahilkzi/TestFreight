@@ -1,50 +1,62 @@
 #Requires AutoHotkey v2.0
+#SingleInstance Force
 
-running := false
-clickX := 0
-clickY := 0
+; ============================================================
+; SETTINGS
+; ============================================================
+
+; Your application's executable
+appExe := "YourApplication.exe"
+
+; The control you want to repeatedly click.
+; Example: "Button1"
+targetControl := "Button1"
+
+; Time between clicks in milliseconds
 clickDelay := 500
 
+; ============================================================
+; STATE
+; ============================================================
 
-; F8 = Save the button position
-F8:: {
-    global clickX, clickY
-
-    MouseGetPos &clickX, &clickY
-
-    ToolTip "Button position saved:`n" clickX ", " clickY
-    SetTimer RemoveToolTip, -1500
-}
+running := false
 
 
-; F6 = Start / Stop
+; ============================================================
+; F6 = START / STOP
+; ============================================================
+
 F6:: {
-    global running
+    global running, clickDelay
 
     running := !running
 
     if running {
-        SetTimer AutoClick, 500
+        SetTimer AutoClick, clickDelay
         SetTimer CheckError, 200
 
         ToolTip "AUTO CLICK: ON"
+        SetTimer RemoveToolTip, -1000
     }
     else {
         SetTimer AutoClick, 0
         SetTimer CheckError, 0
 
         ToolTip "AUTO CLICK: OFF"
+        SetTimer RemoveToolTip, -1000
     }
-
-    SetTimer RemoveToolTip, -1000
 }
 
 
-; F7 = Emergency stop
+; ============================================================
+; F7 = EMERGENCY STOP
+; ============================================================
+
 F7:: {
     global running
 
     running := false
+
     SetTimer AutoClick, 0
     SetTimer CheckError, 0
 
@@ -53,34 +65,52 @@ F7:: {
 }
 
 
-; Automatic click
+; ============================================================
+; AUTOMATIC CLICK
+; ============================================================
+
 AutoClick() {
-    global clickX, clickY
+    global appExe, targetControl
 
-    ; Remember where your cursor currently is
-    MouseGetPos &oldX, &oldY
+    ; Find your application
+    hwnd := WinExist("ahk_exe " appExe)
 
-    ; Click the target
-    Click clickX, clickY
+    if !hwnd
+        return
 
-    ; Put cursor back where it was
-    MouseMove oldX, oldY, 0
+    ; Send click directly to the Windows control.
+    ; The physical mouse does NOT move.
+    try {
+        ControlClick targetControl, "ahk_id " hwnd
+    }
 }
 
 
-; Detect the Windows error
+; ============================================================
+; CHECK FOR YOUR WINDOWS ERROR
+; ============================================================
+
 CheckError() {
 
+    ; Windows standard dialog
     dialogs := WinGetList("ahk_class #32770")
 
     for hwnd in dialogs {
+
         try {
             text := WinGetText(hwnd)
 
+            ; Detect the error from your screenshot
             if InStr(text, "This file does not have an app associated with it") {
-                WinActivate hwnd
+
+                ; Activate error window
+                WinActivate "ahk_id " hwnd
+
                 Sleep 100
+
+                ; Press OK
                 Send "{Enter}"
+
                 return
             }
         }
@@ -88,6 +118,33 @@ CheckError() {
 }
 
 
+; ============================================================
+; REMOVE TOOLTIP
+; ============================================================
+
 RemoveToolTip() {
     ToolTip
+}
+
+
+; ============================================================
+; F8 = SHOW CURRENT APPLICATION INFORMATION
+; ============================================================
+
+F8:: {
+
+    MouseGetPos , , &mouseHwnd
+
+    try {
+        title := WinGetTitle("ahk_id " mouseHwnd)
+        exe := WinGetProcessName("ahk_id " mouseHwnd)
+        class := WinGetClass("ahk_id " mouseHwnd)
+
+        MsgBox(
+            "Window information:`n`n"
+            . "Title: " title "`n"
+            . "EXE: " exe "`n"
+            . "Class: " class
+        )
+    }
 }
